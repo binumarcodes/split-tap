@@ -8,7 +8,7 @@ import Image from "next/image";
 type Person = {
   name: string;
   paid: number;
-  timestamp: string; // added for history
+  timestamp: string;
 };
 
 export default function Home() {
@@ -26,12 +26,10 @@ export default function Home() {
 
   const addPerson = () => {
     if (!name || paid === "") return;
-
     setPeople([
       ...people,
       { name, paid: Number(paid), timestamp: new Date().toLocaleString() },
     ]);
-
     setName("");
     setPaid("");
   };
@@ -55,9 +53,9 @@ export default function Home() {
     const creditors = balances.filter((p) => p.balance > 0);
 
     const transactions: string[] = [];
-
     let i = 0,
       j = 0;
+
     while (i < debtors.length && j < creditors.length) {
       const debtor = debtors[i];
       const creditor = creditors[j];
@@ -77,9 +75,14 @@ export default function Home() {
     setTimeout(() => setShowConfetti(false), 3000);
   };
 
+  // Include full history in message/QR
+  const getFullMessage = () => {
+    const history = people.map((p) => `${p.name} paid ₦${p.paid} (${p.timestamp})`).join("\n");
+    return `Split for: ${title}\n\nSettlement:\n${result.join("\n")}\n\nHistory:\n${history}`;
+  };
+
   const copyMessage = () => {
-    const message = `Split for: ${title}\n\n${result.join("\n")}`;
-    navigator.clipboard.writeText(message);
+    navigator.clipboard.writeText(getFullMessage());
     alert("Copied!");
   };
 
@@ -88,7 +91,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#f5f5f7] flex justify-center py-16 px-4">
       {showConfetti && <Confetti width={windowSize.width} height={windowSize.height} />}
-
       <div className="w-full max-w-xl bg-white/70 backdrop-blur-xl border border-gray-200 shadow-xl rounded-[32px] p-8">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
@@ -147,7 +149,6 @@ export default function Home() {
                 </div>
                 <span className="text-gray-900">{p.name}</span>
               </div>
-
               <div className="flex items-center gap-4">
                 <span className="font-medium text-gray-800">₦{p.paid}</span>
                 <button onClick={() => removePerson(i)} className="text-gray-400 hover:text-red-500">
@@ -172,7 +173,7 @@ export default function Home() {
           Split Bill
         </button>
 
-        {/* Results */}
+        {/* Results + QR + Copy */}
         {result.length > 0 && (
           <div className="mt-8 space-y-3">
             <h2 className="text-gray-900 font-semibold">Settlement</h2>
@@ -186,27 +187,24 @@ export default function Home() {
               onClick={copyMessage}
               className="w-full py-3 rounded-2xl border border-gray-200 hover:bg-gray-50 transition"
             >
-              Copy Payment Message
+              Copy Payment + History
             </button>
 
-            {/* QR */}
             <div className="flex flex-col items-center mt-6">
-              <p className="text-sm text-gray-500 mb-2">Share with QR</p>
-              <QRCodeCanvas value={result.join("\n")} size={150} />
+              <p className="text-sm text-gray-500 mb-2">Share with QR (includes full history)</p>
+              <QRCodeCanvas value={getFullMessage()} size={150} />
             </div>
           </div>
         )}
 
-        {/* Purchase History (optional, Apple-style collapsible list) */}
+        {/* Purchase History */}
         {people.length > 0 && (
           <div className="mt-8">
             <h2 className="text-gray-900 font-semibold mb-2">History</h2>
             <ul className="bg-white/50 rounded-2xl border border-gray-200 p-4 space-y-2 max-h-64 overflow-y-auto">
               {people.map((p, i) => (
                 <li key={i} className="flex justify-between text-gray-800 text-sm">
-                  <span>
-                    {p.name} paid ₦{p.paid}
-                  </span>
+                  <span>{p.name} paid ₦{p.paid}</span>
                   <span className="text-gray-400">{p.timestamp}</span>
                 </li>
               ))}
