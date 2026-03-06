@@ -207,24 +207,32 @@ export default function Home() {
 
         {/* Results + Copy + QR */}
         {result.length > 0 && (
-          <div ref={resultRef} className="mt-8 space-y-3">
-            <h2 className="font-semibold">Settlement</h2>
-            {result.map((r, i) => (
-              <div key={i} className={`${darkMode ? "bg-gray-700/40 border-gray-600 text-white" : "bg-white/40 border-gray-200 text-gray-900"} rounded-2xl p-4 backdrop-blur transition`}>
-                {r}
-              </div>
-            ))}
+  <div ref={resultRef} className="mt-8 space-y-3 relative">
+    {/* Congratulations Banner */}
+    <div className="text-center text-2xl font-bold text-green-500 mb-2 animate-bounce">
+      🎉 Congratulations! 🎉
+    </div>
 
-            <button onClick={copyMessage} className="w-full py-3 rounded-2xl border border-gray-200 hover:bg-gray-50 transition">
-              Copy Payment + History
-            </button>
+    {/* Confetti overlayed on the settlement */}
+    {showConfetti && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} />}
 
-            <div className="flex flex-col items-center mt-6">
-              <p className="text-sm mb-2">Share with QR (includes full history)</p>
-              <QRCodeCanvas value={getFullMessage()} size={150} />
-            </div>
-          </div>
-        )}
+    <h2 className="font-semibold">Settlement</h2>
+    {result.map((r, i) => (
+      <div key={i} className={`${darkMode ? "bg-gray-700/40 border-gray-600 text-white" : "bg-white/40 border-gray-200 text-gray-900"} rounded-2xl p-4 backdrop-blur transition`}>
+        {r}
+      </div>
+    ))}
+
+    <button onClick={copyMessage} className="w-full py-3 rounded-2xl border border-gray-200 hover:bg-gray-50 transition">
+      Copy Payment + History
+    </button>
+
+    <div className="flex flex-col items-center mt-6">
+      <p className="text-sm mb-2">Share with QR (includes full history)</p>
+      <QRCodeCanvas value={getFullMessage()} size={150} />
+    </div>
+  </div>
+)}
 
         {/* Purchase History */}
         {people.length > 0 && (
