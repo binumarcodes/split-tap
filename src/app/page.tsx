@@ -22,11 +22,18 @@ export default function Home() {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [darkMode, setDarkMode] = useState(false);
 
-  const resultRef = useRef<HTMLDivElement>(null); // for scrolling to results
+  const resultRef = useRef<HTMLDivElement>(null); // Scroll to results
 
   useEffect(() => {
     setWindowSize({ width: window.innerWidth, height: window.innerHeight });
   }, []);
+
+  // Auto-scroll whenever results appear
+  useEffect(() => {
+    if (result.length > 0) {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [result]);
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
@@ -85,11 +92,6 @@ export default function Home() {
     setResult(transactions);
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 3000);
-
-    // Scroll to results so confetti is visible
-    setTimeout(() => {
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
   };
 
   const getFullMessage = () => {
@@ -169,7 +171,7 @@ export default function Home() {
           {people.map((p, i) => (
             <div
               key={i}
-              className={`flex justify-between items-center ${darkMode ? "bg-gray-700/40 border-gray-600" : "bg-white/40 border-gray-200"} rounded-2xl px-4 py-3 hover:shadow-md backdrop-blur transition`}
+              className={`flex justify-between items-center border-2 ${darkMode ? "bg-gray-700/40 border-gray-600" : "bg-white/40 border-gray-200"} rounded-2xl px-4 py-3 hover:shadow-md backdrop-blur transition`}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-medium">
