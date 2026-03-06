@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Confetti from "react-confetti";
 import { QRCodeCanvas } from "qrcode.react";
 import Image from "next/image";
@@ -9,6 +9,7 @@ type Person = {
   name: string;
   paid: number;
   timestamp: string;
+  settled: boolean;
 };
 
 export default function Home() {
@@ -19,16 +20,21 @@ export default function Home() {
   const [result, setResult] = useState<string[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const [darkMode, setDarkMode] = useState(false);
+
+  const resultRef = useRef<HTMLDivElement>(null); // for scrolling to results
 
   useEffect(() => {
     setWindowSize({ width: window.innerWidth, height: window.innerHeight });
   }, []);
 
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
   const addPerson = () => {
     if (!name || paid === "") return;
     setPeople([
       ...people,
-      { name, paid: Number(paid), timestamp: new Date().toLocaleString() },
+      { name, paid: Number(paid), timestamp: new Date().toLocaleString(), settled: false },
     ]);
     setName("");
     setPaid("");
@@ -36,6 +42,12 @@ export default function Home() {
 
   const removePerson = (index: number) => {
     setPeople(people.filter((_, i) => i !== index));
+  };
+
+  const toggleSettled = (index: number) => {
+    setPeople(
+      people.map((p, i) => (i === index ? { ...p, settled: !p.settled } : p))
+    );
   };
 
   const calculateSplit = () => {
@@ -73,9 +85,13 @@ export default function Home() {
     setResult(transactions);
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 3000);
+
+    // Scroll to results so confetti is visible
+    setTimeout(() => {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
-  // Include full history in message/QR
   const getFullMessage = () => {
     const history = people.map((p) => `${p.name} paid ₦${p.paid} (${p.timestamp})`).join("\n");
     return `Split for: ${title}\n\nSettlement:\n${result.join("\n")}\n\nHistory:\n${history}`;
@@ -89,9 +105,21 @@ export default function Home() {
   const total = people.reduce((sum, p) => sum + p.paid, 0);
 
   return (
-    <main className="min-h-screen bg-[#f5f5f7] flex justify-center py-16 px-4">
+    <main className={`${darkMode ? "bg-gray-900 text-white" : "bg-[#f5f5f7] text-gray-900"} min-h-screen flex justify-center py-16 px-4 transition-colors`}>
       {showConfetti && <Confetti width={windowSize.width} height={windowSize.height} />}
-      <div className="w-full max-w-xl bg-white/70 backdrop-blur-xl border border-gray-200 shadow-xl rounded-[32px] p-8">
+
+      <div className={`w-full max-w-xl ${darkMode ? "bg-gray-800/60 border-gray-700" : "bg-white/60 border-gray-200"} backdrop-blur-3xl border shadow-xl rounded-[32px] p-8 transition-colors`}>
+
+        {/* Dark Mode Toggle */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={toggleDarkMode}
+            className="px-4 py-2 border rounded-full hover:opacity-90 transition bg-white/30 dark:bg-gray-400/30 backdrop-blur"
+          >
+            {darkMode ? "☀️ Light" : "🌙 Dark"}
+          </button>
+        </div>
+
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <Image
@@ -101,14 +129,14 @@ export default function Home() {
             height={190}
             className="rounded-[24px] shadow-lg hover:scale-105 transition mb-4"
           />
-          <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Split & Tap</h1>
-          <p className="text-sm text-gray-500 mt-1">Smart bill splitting</p>
+          <h1 className="text-3xl font-semibold tracking-tight">Split & Tap</h1>
+          <p className="text-sm mt-1">Smart bill splitting</p>
         </div>
 
         {/* Bill Title */}
         <input
           placeholder="Dinner at restaurant..."
-          className="w-full p-4 rounded-2xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 mb-6"
+          className={`w-full p-4 rounded-2xl border ${darkMode ? "bg-gray-700/40 border-gray-600 text-white placeholder-gray-300" : "bg-white/40 border-gray-200 text-gray-900 placeholder-gray-500"} focus:outline-none focus:ring-2 focus:ring-gray-300 mb-6 backdrop-blur transition`}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
@@ -117,14 +145,14 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <input
             placeholder="Name"
-            className="flex-1 p-4 rounded-2xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            className={`flex-1 p-4 rounded-2xl border ${darkMode ? "bg-gray-700/40 border-gray-600 text-white placeholder-gray-300" : "bg-white/40 border-gray-200 text-gray-900 placeholder-gray-500"} focus:outline-none focus:ring-2 focus:ring-gray-300 backdrop-blur transition`}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input
             placeholder="Amount"
             type="number"
-            className="flex-1 p-4 rounded-2xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            className={`flex-1 p-4 rounded-2xl border ${darkMode ? "bg-gray-700/40 border-gray-600 text-white placeholder-gray-300" : "bg-white/40 border-gray-200 text-gray-900 placeholder-gray-500"} focus:outline-none focus:ring-2 focus:ring-gray-300 backdrop-blur transition`}
             value={paid}
             onChange={(e) => setPaid(Number(e.target.value))}
           />
@@ -141,19 +169,21 @@ export default function Home() {
           {people.map((p, i) => (
             <div
               key={i}
-              className="flex justify-between items-center bg-white border border-gray-200 rounded-2xl px-4 py-3 hover:shadow-md transition"
+              className={`flex justify-between items-center ${darkMode ? "bg-gray-700/40 border-gray-600" : "bg-white/40 border-gray-200"} rounded-2xl px-4 py-3 hover:shadow-md backdrop-blur transition`}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-medium">
                   {p.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-gray-900">{p.name}</span>
+                <span>{p.name}</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="font-medium text-gray-800">₦{p.paid}</span>
-                <button onClick={() => removePerson(i)} className="text-gray-400 hover:text-red-500">
-                  ✕
-                </button>
+                <span>₦{p.paid}</span>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input type="checkbox" checked={p.settled} onChange={() => toggleSettled(i)} />
+                  Paid
+                </label>
+                <button onClick={() => removePerson(i)} className="text-gray-400 hover:text-red-500">✕</button>
               </div>
             </div>
           ))}
@@ -162,7 +192,7 @@ export default function Home() {
         {/* Total */}
         <div className="flex justify-between text-gray-600 mb-6">
           <span>Total</span>
-          <span className="font-semibold text-gray-900">₦{total.toFixed(2)}</span>
+          <span className="font-semibold">₦{total.toFixed(2)}</span>
         </div>
 
         {/* Split Button */}
@@ -173,25 +203,22 @@ export default function Home() {
           Split Bill
         </button>
 
-        {/* Results + QR + Copy */}
+        {/* Results + Copy + QR */}
         {result.length > 0 && (
-          <div className="mt-8 space-y-3">
-            <h2 className="text-gray-900 font-semibold">Settlement</h2>
+          <div ref={resultRef} className="mt-8 space-y-3">
+            <h2 className="font-semibold">Settlement</h2>
             {result.map((r, i) => (
-              <div key={i} className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-800">
+              <div key={i} className={`${darkMode ? "bg-gray-700/40 border-gray-600 text-white" : "bg-white/40 border-gray-200 text-gray-900"} rounded-2xl p-4 backdrop-blur transition`}>
                 {r}
               </div>
             ))}
 
-            <button
-              onClick={copyMessage}
-              className="w-full py-3 rounded-2xl border border-gray-200 hover:bg-gray-50 transition"
-            >
+            <button onClick={copyMessage} className="w-full py-3 rounded-2xl border border-gray-200 hover:bg-gray-50 transition">
               Copy Payment + History
             </button>
 
             <div className="flex flex-col items-center mt-6">
-              <p className="text-sm text-gray-500 mb-2">Share with QR (includes full history)</p>
+              <p className="text-sm mb-2">Share with QR (includes full history)</p>
               <QRCodeCanvas value={getFullMessage()} size={150} />
             </div>
           </div>
@@ -200,17 +227,19 @@ export default function Home() {
         {/* Purchase History */}
         {people.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-gray-900 font-semibold mb-2">History</h2>
-            <ul className="bg-white/50 rounded-2xl border border-gray-200 p-4 space-y-2 max-h-64 overflow-y-auto">
+            <h2 className="font-semibold mb-2">History</h2>
+            <ul className={`${darkMode ? "bg-gray-700/40 border-gray-600 text-white" : "bg-white/40 border-gray-200 text-gray-900"} rounded-2xl p-4 space-y-2 max-h-64 overflow-y-auto backdrop-blur transition`}>
               {people.map((p, i) => (
-                <li key={i} className="flex justify-between text-gray-800 text-sm">
+                <li key={i} className="flex justify-between items-center text-sm">
                   <span>{p.name} paid ₦{p.paid}</span>
                   <span className="text-gray-400">{p.timestamp}</span>
+                  <span className={`${p.settled ? "text-green-500" : "text-red-400"}`}>{p.settled ? "✓ Paid" : "❌ Unpaid"}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
+
       </div>
     </main>
   );
